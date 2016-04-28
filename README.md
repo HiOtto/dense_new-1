@@ -18,10 +18,15 @@ TODO (to be fixed soon):
 There is a problem caused by our internal use of quadrotor_msgs/Odometry.h. If you meet complier problems, please do minor modifications:
 
 quadrotor_msgs/Odometry.h --> nav_msgs/Odometry.h
+
 quadrotor_msgs::Odometry --> nav_msgs::Odometry
+
 quadrotor_msgs --> nav_msgs
 
+
 modify code that look like odom_msg.curodom.xxxx to odom_msg.xxx, ignore odom_msg.kfodom.xxxx where the message is constructed to be published.
+
+
 
 
 
