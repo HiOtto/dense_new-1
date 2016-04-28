@@ -115,7 +115,7 @@ class Math
                             const Vector3d& Tij, const Matrix3d& Rij )
     {
       VectorXd r = VectorXd::Zero(9);
-      r.segment<3>(0) = Rj.transpose()*(pj - pi) - Tij;
+      r.segment<3>(0) = Rj.transpose()*(pi - pj) - Tij;
       r.segment<3>(6) = Quaterniond(Rij.transpose() * Rj.transpose() * Ri).vec() * 2.0;
 
       return  r;
@@ -125,9 +125,9 @@ class Math
                             const Vector3d& pj, const Matrix3d& Rj )
     {
       MatrixXd J = MatrixXd::Zero(9, 18);
-      J.block<3,3>(0,0)  = -Rj.transpose();
-      J.block<3,3>(0,9)  = Rj.transpose();
-      J.block<3,3>(0,15) = Skew( Rj.transpose()*(pj-pi) ) ;
+      J.block<3,3>(0,0)  = Rj.transpose();
+      J.block<3,3>(0,9)  = -Rj.transpose();
+      J.block<3,3>(0,15) = Skew( Rj.transpose()*(pi-pj) ) ;
       J.block<3,3>(6,6)  = Matrix3d::Identity();
       J.block<3,3>(6,15) = -Ri.transpose()*Rj ;
       return J;

@@ -29,7 +29,6 @@
 #include "DataStructures/FrameMemory.h"
 #include <deque>
 #include "sensor_msgs/PointCloud2.h"
-#include "quadrotor_msgs/Odometry.h"
 
 // for mkdir
 #include <sys/types.h>
@@ -126,7 +125,6 @@ void SlamSystem::initRosPub()
 {
     pub_path = nh.advertise<visualization_msgs::Marker>("/denseVO/path", 1000);
     pub_cloud = nh.advertise<sensor_msgs::PointCloud2>("/denseVO/cloud", 1000);
-    pub_odometry = nh.advertise<quadrotor_msgs::Odometry>("/denseVO/odometry", 1000);
     pub_pose = nh.advertise<geometry_msgs::PoseStamped>("/denseVO/pose", 1000);
     pub_resudualMap = nh.advertise<sensor_msgs::Image>("denseVO/residualMap", 100 );
     pub_reprojectMap = nh.advertise<sensor_msgs::Image>("denseVO/reprojectMap", 100 );
@@ -815,7 +813,8 @@ void SlamSystem::insertCameraLink(Frame* keyFrame, Frame* currentFrame,
   //keyFrame->cameraLink[currentFrame->id].T_trust = T_trust ;
 }
 
-void SlamSystem::setReprojectionListRelateToLastestKeyFrame(int begin, int end, Frame* current )
+void SlamSystem::setReprojectionListRelateToLastestKeyFrame(int begin, int end, Frame* current,
+                                                            const Eigen::Matrix3d& R_i_2_c, const Eigen::Vector3d& T_i_2_c )
 {
     int num = end - begin;
     if ( num < 0 ){
@@ -898,10 +897,23 @@ void SlamSystem::setReprojectionListRelateToLastestKeyFrame(int begin, int end, 
         {
             continue ;
         }
+
+
+
+#ifdef PROJECT_TO_IMU_CENTER
+        Eigen::Matrix3d r_i_2_j = RefToFrame.rotationMatrix().cast<double>();
+        Eigen::Vector3d t_i_2_j = RefToFrame.translation().cast<double>();
+        Eigen::Matrix3d final_R = R_i_2_c.transpose()*r_i_2_j*R_i_2_c;
+        Eigen::Vector3d final_T = R_i_2_c.transpose()*(r_i_2_j*T_i_2_c + t_i_2_j ) - R_i_2_c.transpose()*T_i_2_c ;
+#else
+        Eigen::Matrix3d final_R = RefToFrame.rotationMatrix().cast<double>();
+        Eigen::Vector3d final_T = RefToFrame.translation().cast<double>();
+#endif
+
         //ROS_WARN("[add link, from %d to %d]", slidingWindow[ref_id]->id(), current->id() ) ;
         insertCameraLink( slidingWindow[ref_id].get(), current,
-                          RefToFrame.rotationMatrix().cast<double>(),
-                          -RefToFrame.translation().cast<double>(),
+                          final_R,
+                          final_T,
                           MatrixXd::Identity(6, 6)*DENSE_TRACKING_WEIGHT ) ;
         break ;
     }
@@ -1034,15 +1046,14 @@ void SlamSystem::trackFrame(cv::Mat img0, unsigned int frameID,
     FRAMEINFO& tmpFrameInfo = frameInfoList[tmpTail] ;
     tmpFrameInfo.t = imageTimeStamp ;
 
-#if 0
-    tmpFrameInfo.R_k_2_c = RefToFrame.rotationMatrix().cast<double>();
-    tmpFrameInfo.T_k_2_c = RefToFrame.translation().cast<double>();
-#else
+#ifdef PROJECT_TO_IMU_CENTER
     Eigen::Matrix3d r_k_2_c = RefToFrame.rotationMatrix().cast<double>();
     Eigen::Vector3d t_k_2_c = RefToFrame.translation().cast<double>();
-
     tmpFrameInfo.R_k_2_c = R_i_2_c.transpose()*r_k_2_c*R_i_2_c;
     tmpFrameInfo.T_k_2_c = R_i_2_c.transpose()*(r_k_2_c*T_i_2_c + t_k_2_c ) - R_i_2_c.transpose()*T_i_2_c ;
+#else
+    tmpFrameInfo.R_k_2_c = RefToFrame.rotationMatrix().cast<double>();
+    tmpFrameInfo.T_k_2_c = RefToFrame.translation().cast<double>();
 #endif
 
 //    ROS_WARN("trackFrame = ") ;

@@ -115,6 +115,7 @@ bool continuousPCOutput = false;
 bool fullResetRequested = false;
 bool manualTrackingLossIndicated = false;
 
+bool onUAV = false;
 
 std::string packagePath = "";
 

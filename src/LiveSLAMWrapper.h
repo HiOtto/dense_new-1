@@ -71,7 +71,7 @@ public:
 //	void resetAll();
 
 	/** Writes the given time and pose to the outFile. */
-	void logCameraPose(const SE3& camToWorld, double time);
+    void logCameraPose();
 	
 	inline SlamSystem* getSlamSystem() {return monoOdometry;}
 	
@@ -111,6 +111,9 @@ public:
 
     int cnt_info_smooth ;
     geometry_msgs::Vector3 to_pub_info ;
+
+    int log_cameraPoseID = 0 ;
+    cv::Mat lastestImg ;
 };
 
 }

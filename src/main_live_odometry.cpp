@@ -40,6 +40,7 @@
 
 using namespace lsd_slam;
 using namespace std ;
+using namespace Eigen;
 
 CALIBRATION_PAR calib_par ;
 ros::Subscriber sub_image[2];
@@ -48,6 +49,9 @@ LiveSLAMWrapper* globalLiveSLAM = NULL ;
 cv::Mat R0, R1, P0, P1, Q;
 cv::Rect roi1, roi2 ;
 cv::Mat map00_, map01_, map10_, map11_ ;
+int skipFrameNum = 0 ;
+int cntFrame0Num = 0 ;
+int cntFrame1Num = 0 ;
 
 void readCalibrationExtrinsics(string caliFilePath)
 {
@@ -69,6 +73,9 @@ void readCalibrationExtrinsics(string caliFilePath)
         }
         calib_par.T_i_2_c(i) = Tic_1.at<double>(0, i) ;
     }
+    calib_par.R_i_2_c.setIdentity() ;
+//    calib_par.R_i_2_c = calib_par.R_i_2_c ;
+//    calib_par.T_i_2_c = calib_par.T_i_2_c ;
 }
 
 
@@ -97,11 +104,16 @@ void readCalibrationIntrisics(string caliFilePath)
     //cv::initUndistortRectifyMap
     cv::initUndistortRectifyMap(K0, D0, R0, P0, img_size, CV_16SC2, map00_, map01_);
     cv::initUndistortRectifyMap(K1, D1, R1, P1, img_size, CV_16SC2, map10_, map11_);
-
+/*
     calib_par.fx = K0.at<double>(0, 0)/2.0 ;
     calib_par.fy = K0.at<double>(1, 1)/2.0 ;
     calib_par.cx = (K0.at<double>(0, 2)+0.5)/2.0 - 0.5 ;
     calib_par.cy = (K0.at<double>(1, 2)+0.5)/2.0 - 0.5 ;
+*/
+    calib_par.fx = P0.at<double>(0, 0)/2.0 ;
+    calib_par.fy = P0.at<double>(1, 1)/2.0 ;
+    calib_par.cx = (P0.at<double>(0, 2)+0.5)/2.0 - 0.5 ;
+    calib_par.cy = (P0.at<double>(1, 2)+0.5)/2.0 - 0.5 ;
     for( int i = 0 ; i < 4; i++ ){
         calib_par.d[i] = D0.at<double>(0, i) ;
     }
@@ -148,22 +160,32 @@ void readCalibrationIntrisics(string caliFilePath)
 
 void image0CallBack(const sensor_msgs::ImageConstPtr& msg)
 {
-    ros::Time tImage = msg->header.stamp;
-    cv::Mat image  = cv_bridge::toCvShare(msg, std::string("mono8"))->image;
-    cv::Mat imgRect ;
+    if ( cntFrame0Num == 0 )
+    {
+        ros::Time tImage = msg->header.stamp;
+        cv::Mat image  = cv_bridge::toCvShare(msg, std::string("mono8"))->image;
+        cv::Mat imgRect ;
 
-    //double t = (double)cvGetTickCount()  ;
-    cv::remap(image, imgRect, map00_, map01_, cv::INTER_LINEAR);
-    cv::pyrDown(imgRect, imgRect, cv::Size(imgRect.cols/2, imgRect.rows/2) ) ;
-    //printf("rect time: %f\n", ((double)cvGetTickCount() - t) / (cvGetTickFrequency() * 1000) );
+        //cout << "image0" << tImage << endl ;
 
-//    cv::imshow("image0", imgRect ) ;
-//    cv::waitKey(1) ;
+        //double t = (double)cvGetTickCount()  ;
+        cv::remap(image, imgRect, map00_, map01_, cv::INTER_LINEAR);
+        cv::pyrDown(imgRect, imgRect, cv::Size(imgRect.cols/2, imgRect.rows/2) ) ;
+        //printf("rect time: %f\n", ((double)cvGetTickCount() - t) / (cvGetTickFrequency() * 1000) );
 
-    globalLiveSLAM->image0_queue_mtx.lock();
-    globalLiveSLAM->image0Buf.push_back(ImageMeasurement(tImage, imgRect));
-    globalLiveSLAM->image0_queue_mtx.unlock();
+    //    cv::imshow("image0", imgRect ) ;
+    //    cv::waitKey(1) ;
+        globalLiveSLAM->lastestImg = image ;
+        globalLiveSLAM->image0_queue_mtx.lock();
+        globalLiveSLAM->image0Buf.push_back(ImageMeasurement(tImage, imgRect));
+        globalLiveSLAM->image0_queue_mtx.unlock();
+    }
+    cntFrame0Num++ ;
+    if ( cntFrame0Num > skipFrameNum ){
+        cntFrame0Num = 0 ;
+    }
 }
+
 
 void image1CallBack(const sensor_msgs::ImageConstPtr& msg)
 {
@@ -247,17 +269,31 @@ int main( int argc, char** argv )
 {
     XInitThreads();
 
-	ros::init(argc, argv, "LSD_SLAM");
-    ros::NodeHandle nh ;
+    ros::init(argc, argv, "dense_new");
+    ros::NodeHandle nh("~") ;
 
     dynamic_reconfigure::Server<dense_new::LSDParamsConfig> srv(ros::NodeHandle("~"));
 	srv.setCallback(dynConfCb);
 
     string packagePath = ros::package::getPath("dense_new")+"/";
+    string intrinsics_calibration_file ;
+    string extrinsics_calibration_file ;
     //string caliFilePath = packagePath + "calib/LSD_calib.cfg" ;
 
-    readCalibrationIntrisics(packagePath+"calib/combine2.yml") ;
-    readCalibrationExtrinsics(packagePath+"calib/visensor.yml");
+    //readCalibrationIntrisics(packagePath+"calib/combine2.yml") ;
+    //readCalibrationExtrinsics(packagePath+"calib/visensor.yml");
+
+    //string packagePath = ros::package::getPath("dense_edge_imu")+"/";
+    nh.param("intrinsics_calibration_file", intrinsics_calibration_file, packagePath+"/calib/combine2.yml" ) ;
+    nh.param("extrinsics_calibration_file", extrinsics_calibration_file, packagePath+"/calib/visensor.yml" ) ;
+    nh.param("skipFrameNum", skipFrameNum, 0 ) ;
+    nh.param("onUAV", onUAV, false ) ;
+    readCalibrationIntrisics( intrinsics_calibration_file ) ;
+    readCalibrationExtrinsics( extrinsics_calibration_file );
+
+    cntFrame0Num = cntFrame1Num = 0 ;
+
+
 //    if ( initCalibrationPar(caliFilePath) == false ){
 //        return 0 ;
 //    }

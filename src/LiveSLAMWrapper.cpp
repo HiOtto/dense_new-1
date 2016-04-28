@@ -53,12 +53,14 @@ LiveSLAMWrapper::LiveSLAMWrapper(std::string packagePath, ros::NodeHandle& _nh, 
 
     R_vi_2_odometry << 0, 0, 1, -1, 0, 0, 0, -1, 0 ;
 
-    //outFileName = packagePath+"estimated_poses.txt";
-    outFileName = packagePath+"angular_volcity.txt";
+    outFileName = packagePath+"estimated_poses.txt";
+//    outFileName = packagePath+"angular_volcity.txt";
     outFile.open(outFileName);
 
 	// make Odometry
     monoOdometry = new SlamSystem(width, height, K_sophus, _nh);
+
+    log_cameraPoseID = 0 ;
 
 	imageSeqNumber = 0;
     sumDist = 0 ;
@@ -86,7 +88,7 @@ LiveSLAMWrapper::~LiveSLAMWrapper()
     imuQueue.clear();
 }
 
-void LiveSLAMWrapper::popAndSetGravity()
+void LiveSLAMWrapper::  popAndSetGravity()
 {
     unsigned int image0BufSize ;
     unsigned int image1BufSize ;
@@ -103,7 +105,9 @@ void LiveSLAMWrapper::popAndSetGravity()
         imu_queue_mtx.lock();
         image0BufSize = image0Buf.size();
         image1BufSize = image1Buf.size();
-        if ( image0BufSize < 15 || image1BufSize < 15 || imuQueue.size() < 120 ){
+        if ( imuQueue.size() < 120
+             || image0BufSize < 2 || image1BufSize < 2
+              ){
             image0_queue_mtx.unlock();
             image1_queue_mtx.unlock();
             imu_queue_mtx.unlock();
@@ -170,12 +174,12 @@ void LiveSLAMWrapper::popAndSetGravity()
     monoOdometry->margin.initPrior();
     monoOdometry->updateTrackingReference();
 
-    pubOdometry(Eigen::Vector3d::Zero(),
-            Eigen::Vector3d::Zero(),
-            Eigen::Matrix3d::Identity(),
-            monoOdometry->pub_odometry, monoOdometry->pub_pose,
-            0, R_vi_2_odometry,
-            true, tImage );
+//    pubOdometry(Eigen::Vector3d::Zero(),
+//            Eigen::Vector3d::Zero(),
+//            Eigen::Matrix3d::Identity(),
+//            monoOdometry->pub_odometry, monoOdometry->pub_pose,
+//            0, R_vi_2_odometry,
+//            true, tImage );
     lastLoopClorsureTime = tImage ;
 }
 
@@ -448,7 +452,8 @@ void LiveSLAMWrapper::BALoop()
                 //add possible loop closure link
                 t = (double)cvGetTickCount()  ;
                 monoOdometry->setReprojectionListRelateToLastestKeyFrame( monoOdometry->head, preKeyFrameID,
-                                                                         monoOdometry->slidingWindow[monoOdometry->tail].get() ) ;
+                                                                          monoOdometry->slidingWindow[monoOdometry->tail].get(),
+                                                                          R_i_2_c, T_i_2_c ) ;
                 ROS_WARN("loop closure link cost time: %f", ((double)cvGetTickCount() - t) / (cvGetTickFrequency() * 1000) );
                 t = (double)cvGetTickCount()  ;
                 lastLoopClorsureTime = imageTimeStamp ;
@@ -462,7 +467,7 @@ void LiveSLAMWrapper::BALoop()
 
             monoOdometry->insertCameraLink(keyFrame, currentFrame,
                           monoOdometry->frameInfoList[monoOdometry->frameInfoListHead].R_k_2_c,
-                          -monoOdometry->frameInfoList[monoOdometry->frameInfoListHead].T_k_2_c,
+                          monoOdometry->frameInfoList[monoOdometry->frameInfoListHead].T_k_2_c,
                           monoOdometry->frameInfoList[monoOdometry->frameInfoListHead].lastestATA );
         }
 
@@ -497,12 +502,25 @@ void LiveSLAMWrapper::BALoop()
         monoOdometry->twoWayMarginalize();
         monoOdometry->setNewMarginalzationFlag();
 
-        pubOdometry(monoOdometry->slidingWindow[monoOdometry->tail]->T_bk_2_b0,
-                monoOdometry->slidingWindow[monoOdometry->tail]->v_bk,
-                monoOdometry->slidingWindow[monoOdometry->tail]->R_bk_2_b0,
-                monoOdometry->pub_odometry, monoOdometry->pub_pose,
-                control_flag, R_vi_2_odometry,
-                monoOdometry->frameInfoList[monoOdometry->frameInfoListHead].keyFrameFlag, imageTimeStamp );
+//        R_vi_2_odometry.setIdentity() ;
+//        if ( onUAV )
+//        {
+//            pubOdometry(monoOdometry->slidingWindow[monoOdometry->tail]->T_bk_2_b0,
+//                    monoOdometry->slidingWindow[monoOdometry->tail]->v_bk,
+//                    monoOdometry->slidingWindow[monoOdometry->tail]->R_bk_2_b0,
+//                    monoOdometry->pub_odometry, monoOdometry->pub_pose,
+//                    control_flag, R_vi_2_odometry,
+//                    monoOdometry->frameInfoList[monoOdometry->frameInfoListHead].keyFrameFlag, imageTimeStamp );
+//        }
+//        else
+//        {
+//            pubOdometry(monoOdometry->slidingWindow[monoOdometry->tail]->T_bk_2_b0,
+//                    monoOdometry->slidingWindow[monoOdometry->tail]->v_bk,
+//                    monoOdometry->slidingWindow[monoOdometry->tail]->R_bk_2_b0,
+//                    monoOdometry->pub_odometry, monoOdometry->pub_pose,
+//                    control_flag, Eigen::Matrix3d::Identity(),
+//                    monoOdometry->frameInfoList[monoOdometry->frameInfoListHead].keyFrameFlag, imageTimeStamp );
+//        }
 
 #ifdef PRINT_DEBUG_INFO
         int colorFlag = 0 ;
@@ -510,9 +528,16 @@ void LiveSLAMWrapper::BALoop()
         if (  monoOdometry->frameInfoList[monoOdometry->frameInfoListHead].trust == false ){
             colorFlag = 2 ;
         }
-        pubPath(monoOdometry->slidingWindow[monoOdometry->tail]->T_bk_2_b0,
-                colorFlag,
-                monoOdometry->path_line, monoOdometry->pub_path, R_vi_2_odometry);
+        if ( onUAV ){
+            pubPath(monoOdometry->slidingWindow[monoOdometry->tail]->T_bk_2_b0,
+                    colorFlag,
+                    monoOdometry->path_line, monoOdometry->pub_path, R_vi_2_odometry);
+        }
+        else{
+            pubPath(monoOdometry->slidingWindow[monoOdometry->tail]->T_bk_2_b0,
+                    colorFlag,
+                    monoOdometry->path_line, monoOdometry->pub_path, Eigen::Matrix3d::Identity() );
+        }
 #endif
 
 #ifdef  PUB_TF
@@ -532,6 +557,7 @@ void LiveSLAMWrapper::BALoop()
         transform.setRotation(q);
         br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "world", "densebody"));
 #endif
+        logCameraPose() ;
 
 //        int preIndex = monoOdometry->tail - 1 ;
 //        if ( preIndex < 0 ){
@@ -573,15 +599,6 @@ void LiveSLAMWrapper::Loop()
         image0_queue_mtx.lock();
         image1_queue_mtx.lock();
         imu_queue_mtx.lock();
-        pIter = pImage1Iter ;
-        pIter++ ;
-        if ( pIter == image1Buf.end() ){
-            image0_queue_mtx.unlock();
-            image1_queue_mtx.unlock();
-            imu_queue_mtx.unlock();
-            r.sleep() ;
-            continue ;
-        }
         pIter = pImage0Iter ;
         pIter++ ;
         if ( pIter == image0Buf.end() ){
@@ -592,8 +609,26 @@ void LiveSLAMWrapper::Loop()
             continue ;
         }
         imageTimeStamp = pIter->t ;
+
+        pIter = pImage1Iter ;
+        pIter++ ;
+        if ( pIter == image1Buf.end() ){
+            image0_queue_mtx.unlock();
+            image1_queue_mtx.unlock();
+            imu_queue_mtx.unlock();
+            r.sleep() ;
+            continue ;
+        }
+        if ( image1Buf.rbegin()->t < imageTimeStamp )
+        {
+            image0_queue_mtx.unlock();
+            image1_queue_mtx.unlock();
+            imu_queue_mtx.unlock();
+            r.sleep() ;
+            continue ;
+        }
         reverse_iterImu = imuQueue.rbegin() ;
-//        printf("%d %d\n", imuQueue.size() < 10, reverse_iterImu->header.stamp <= imageTimeStamp ) ;
+        //        printf("%d %d\n", imuQueue.size() < 10, reverse_iterImu->header.stamp <= imageTimeStamp ) ;
         if ( imuQueue.size() < 1 || reverse_iterImu->header.stamp < imageTimeStamp ){
             image0_queue_mtx.unlock();
             image1_queue_mtx.unlock();
@@ -601,14 +636,18 @@ void LiveSLAMWrapper::Loop()
             r.sleep() ;
             continue ;
         }
+        imu_queue_mtx.unlock();
+
+        while ( pImage1Iter->t < imageTimeStamp ){
+            pImage1Iter++ ;
+        }
+        pImage0Iter++ ;
         //std::cout << imageTimeStamp.toNSec() << "\n" ;
         //std::cout << "[dt-image] " << imageTimeStamp << std::endl ;
         //std::cout << "[dt-imu] " << reverse_iterImu->header.stamp << " " << imuQueue.size() << std::endl ;
-        ros::Time preTime = pImage1Iter->t ;
-        pImage1Iter++ ;
-        pImage0Iter++ ;
+        ros::Time preTime = imageTimeStamp ;
+        //pImage1Iter++ ;
 
-        imu_queue_mtx.unlock();
         image1 = pImage1Iter->image.clone();
         image0 = pImage0Iter->image.clone();
         image1_queue_mtx.unlock();
@@ -633,15 +672,15 @@ void LiveSLAMWrapper::Loop()
         }
         imu_queue_mtx.unlock();
 
-		// process image
-		//Util::displayImage("MyVideo", image.data);
+        // process image
+        //Util::displayImage("MyVideo", image.data);
         Matrix3d deltaR(q) ;
 
         //puts("444") ;
 
-//        cv::imshow("img0", image0 ) ;
-//        cv::imshow("img1", image1 ) ;
-//        cv::waitKey(1) ;
+        //        cv::imshow("img0", image0 ) ;
+        //        cv::imshow("img1", image1 ) ;
+        //        cv::waitKey(1) ;
 
         ++imageSeqNumber;
         assert(image0.elemSize() == 1);
@@ -670,8 +709,26 @@ void LiveSLAMWrapper::Loop()
 	}
 }
 
-void LiveSLAMWrapper::logCameraPose(const SE3& camToWorld, double time)
+void LiveSLAMWrapper::logCameraPose()
 {
+    if ( log_cameraPoseID%3 == 0 )
+    {
+        int k = monoOdometry->tail ;
+        Quaterniond q(monoOdometry->R[k]) ;
+        outFile << " " << log_cameraPoseID << " "
+                << monoOdometry->T[k](0) << " "
+                << monoOdometry->T[k](1) << " "
+                << monoOdometry->T[k](2) << " "
+                << q.x() << " "
+                << q.y() << " "
+                << q.z() << " "
+                << q.w() << "\n" ;
+        char tmp[128] ;
+        sprintf(tmp, "/home/ygling2008/new_vins_data/%04d.png", log_cameraPoseID ) ;
+        cv::imwrite(tmp, lastestImg) ;
+    }
+
+    log_cameraPoseID++ ;
 //    Sophus::Quaterniond quat = camToWorld.unit_quaternion();
 //    Eigen::Vector3d trans = camToWorld.translation();
 

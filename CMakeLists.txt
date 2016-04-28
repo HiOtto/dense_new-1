@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(dense_new)
 
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${SSE_FLAGS} -DENABLE_SSE -fopenmp -Wall -std=c++11 -Ofast -pipe -march=native -mtune=native")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${SSE_FLAGS} -DENABLE_SSE -g -fopenmp -Wall -std=c++11 -Ofast -pipe -march=native -mtune=native")
 SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${SSE_FLAGS} -DENABLE_SSE -fopenmp -Ofast -march=native -mtune=native -pipe -Wall")
 SET(OpenCV_INCLUDE_DIRS "/usr/include/opencv;/usr/include/opencv2")
 SET(CMAKE_MODULE_PATH   ${PROJECT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
@@ -116,6 +116,6 @@ target_link_libraries(dense_new
  # ${Boost_SYSTEM_LIBRARY}
 )
 
-add_executable(live_slam src/main_live_odometry.cpp)
-target_link_libraries(live_slam dense_new)
+add_executable(my_slam src/main_live_odometry.cpp)
+target_link_libraries(my_slam dense_new)
 

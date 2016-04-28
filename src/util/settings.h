@@ -28,6 +28,8 @@
 #define ENABLE_SSE
 #endif
 
+#define PROJECT_TO_IMU_CENTER
+
 #define PRINT_DEBUG_INFO
 #define PUB_TF
 //#define PUB_POINT_CLOUD
@@ -72,7 +74,7 @@ const Eigen::Matrix3d gyr_cov = 1e-4 * Eigen::Matrix3d::Identity();
 //const Eigen::Matrix3d gra_cov = 0.23/1000.0*9.8 * 0.23/1000.0*9.8 * 200 * Eigen::Matrix3d::Identity();
 //const Eigen::Matrix3d gyr_cov = 0.0135/180.0*PI * 0.0135/180.0*PI * 25 * Eigen::Matrix3d::Identity();
 const int frameInfoListSize = 200 ;
-#define DENSE_TRACKING_WEIGHT 100000000.0
+#define DENSE_TRACKING_WEIGHT 100000.0
 #define RECORD_RESULT
 
 /** ============== constants for validity handeling ======================= */
@@ -208,6 +210,8 @@ extern bool onSceenInfoDisplay;
 extern bool dumpMap;
 extern bool doFullReConstraintTrack;
 
+
+extern bool onUAV ;
 
 // dyn config
 extern bool printDebugInfo ;

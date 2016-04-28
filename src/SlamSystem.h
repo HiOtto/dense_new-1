@@ -122,7 +122,7 @@ public:
     void insertCameraLink(Frame* keyFrame, Frame* currentFrame,
             const Matrix3d& R_k_2_c, const Vector3d& T_k_2_c, const MatrixXd& lastestATA );
     void processIMU(double dt, const Vector3d&linear_acceleration, const Vector3d &angular_velocity);
-    void setReprojectionListRelateToLastestKeyFrame(int begin, int end, Frame* current );
+    void setReprojectionListRelateToLastestKeyFrame(int begin, int end, Frame* current, const Eigen::Matrix3d& R_i_2_c, const Eigen::Vector3d& T_i_2_c);
 
 	// ============= EXCLUSIVELY TRACKING THREAD (+ init) ===============
 	TrackingReference* trackingReference; // tracking reference for current keyframe. only used by tracking.
