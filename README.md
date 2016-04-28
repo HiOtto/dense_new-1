@@ -1,4 +1,4 @@
-This is the webpage of the open-source packages of our paper submitted to ICRA2016. Our implementation of dense tracking is built on the top of the open-source and vectorized implementation of [1]. Our package is compatible with the standard driver of VI-Sensor and ROS version of indigo. OpenCV is needed. ROS packages related to VI-sensor is needed, too. (https://github.com/ethz-asl/libvisensor and git clone https://github.com/ethz-asl/visensor_node.git)
+This is the webpage of the open-source packages of our paper submitted to ICRA2016. Our implementation of dense tracking is built on the top of the open-source and vectorized implementation of [1]. Our package is compatible with the standard driver of VI-Sensor and ROS version of indigo. OpenCV is needed. ROS packages related to VI-sensor is needed, too. (https://github.com/ethz-asl/libvisensor and https://github.com/ethz-asl/visensor_node.git)
 
 The high resolution video of our submitted paper is: 
 http://1drv.ms/1QlCTbl
