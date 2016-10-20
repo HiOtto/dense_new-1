@@ -11,7 +11,7 @@ If you can not visit Microsoft Onedrive, please add
 in the end of windows/system32/drivers/etc/hosts. (windows user)
 
 We have uploaded the experimental data shown in the video. All the raw data, estimatior output, UKF smoothing output, control command and etc. are included in the rosbags. To download it, please visit,
-https://onedrive.live.com/redir?resid=907AC500FCC6D19C!2972&authkey=!ACEqE_Xtr5aruco&ithint=folder%2c
+https://www.dropbox.com/s/ebj3438g22wl8yl/icra_bags.zip?dl=0
 
 
 If you use our code, please cite our paper "Aggresive Quadrotor Flight Using Dense Visual-Inertial Fusion", in Proc. of the IEEE Intl. Conf. on Robot. and Autom., 2016. 
