@@ -14,7 +14,12 @@ We have uploaded the experimental data shown in the video. All the raw data, est
 https://www.dropbox.com/s/ebj3438g22wl8yl/icra_bags.zip?dl=0
 
 
-If you use our code, please cite our paper "Aggresive Quadrotor Flight Using Dense Visual-Inertial Fusion", in Proc. of the IEEE Intl. Conf. on Robot. and Autom., 2016. 
+If you use our code, please cite our paper
+
+1. "Aggresive Quadrotor Flight Using Dense Visual-Inertial Fusion", in Proc. of the IEEE Intl. Conf. on Robot. and Autom., 2016. 
+
+2. "Dense Visual-Inertial Odometry for Tracking of Aggressive Motions", in Proc. of the IEEE International Conference on Robotics and Biomimetics 2015.
+
 
 For more questions, please contact ylingaa at connect dot ust dot hk .
 
