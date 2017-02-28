@@ -3,12 +3,6 @@ This is the webpage of the open-source packages of our paper submitted to ICRA20
 The high resolution video of our submitted paper is: 
 https://onedrive.live.com/redir?resid=907AC500FCC6D19C!256&authkey=!AFx_upC8zphx44w&ithint=video%2cmp4
 
-If you can not visit Microsoft Onedrive, please add 
-"
-134.170.108.26 onedrive.live.com   
-134.170.109.48 skyapi.onedrive.live.com
-"
-in the end of windows/system32/drivers/etc/hosts. (windows user)
 
 We have uploaded the experimental data shown in the video. All the raw data, estimatior output, UKF smoothing output, control command and etc. are included in the rosbags. To download it, please visit,
 https://www.dropbox.com/s/ebj3438g22wl8yl/icra_bags.zip?dl=0
