@@ -8,18 +8,14 @@ We have uploaded the experimental data shown in the video. All the raw data, est
 https://www.dropbox.com/s/ebj3438g22wl8yl/icra_bags.zip?dl=0
 
 
-If you use our code, please cite our paper
+The source code is released under [GPLv3](http://www.gnu.org/licenses/) license. 
+
+If you use our code, please cite our papers:
 
 1. "Aggresive Quadrotor Flight Using Dense Visual-Inertial Fusion", in Proc. of the IEEE Intl. Conf. on Robot. and Autom., 2016. 
-
 2. "Dense Visual-Inertial Odometry for Tracking of Aggressive Motions", in Proc. of the IEEE International Conference on Robotics and Biomimetics 2015.
 
-
-The source code is released under [GPLv3](http://www.gnu.org/licenses/) license.
-
 For more questions, please contact ylingaa at connect dot ust dot hk .
-
-
 
 
 [1] LSD-SLAM: Large-Scale Direct Monocular SLAM (J. Engel, T. Schöps, D. Cremers), In European Conference on Computer Vision (ECCV), 2014.
