@@ -14,6 +14,8 @@ If you use our code, please cite our paper
 
 2. "Dense Visual-Inertial Odometry for Tracking of Aggressive Motions", in Proc. of the IEEE International Conference on Robotics and Biomimetics 2015.
 
+## 7. Licence
+The source code is released under [GPLv3](http://www.gnu.org/licenses/) license.
 
 For more questions, please contact ylingaa at connect dot ust dot hk .
 
