@@ -8,7 +8,7 @@ We have uploaded the experimental data shown in the video. All the raw data, est
 https://www.dropbox.com/s/ebj3438g22wl8yl/icra_bags.zip?dl=0
 
 
-The source code is released under [GPLv3](http://www.gnu.org/licenses/) license. 
+The source code is released under [GPLv3](https://www.gnu.org/licenses/gpl-3.0.html) license. 
 
 If you use our code, please cite our papers:
 
